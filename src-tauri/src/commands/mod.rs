@@ -25,6 +25,7 @@ pub struct AppState {
     pub history_mode: Mutex<String>,
     pub history_limit: Mutex<u32>,
     pub max_tokens: Mutex<u32>,
+    pub last_player_input: Mutex<String>,
     pub app_data_dir: PathBuf,
 }
 
@@ -42,6 +43,7 @@ impl AppState {
             history_mode: Mutex::new(s.history_mode),
             history_limit: Mutex::new(s.history_limit),
             max_tokens: Mutex::new(s.max_tokens),
+            last_player_input: Mutex::new(String::new()),
             app_data_dir,
         }
     }
@@ -53,6 +55,7 @@ impl AppState {
             endpoint: self.endpoint.lock().unwrap().clone(),
             api_format: self.api_format.lock().unwrap().clone(),
             system_prompt: self.system_prompt.lock().unwrap().clone(),
+            system_prompt_customized: true,
             history_mode: self.history_mode.lock().unwrap().clone(),
             history_limit: *self.history_limit.lock().unwrap(),
             max_tokens: *self.max_tokens.lock().unwrap(),
@@ -123,7 +126,18 @@ pub fn get_system_prompt(state: State<AppState>) -> String {
 #[tauri::command]
 pub fn reset_system_prompt(state: State<AppState>) {
     *state.system_prompt.lock().unwrap() = SYSTEM_PROMPT.to_string();
-    state.save_settings();
+    let s = settings::PersistedSettings {
+        api_key: state.api_key.lock().unwrap().clone(),
+        model: state.model.lock().unwrap().clone(),
+        endpoint: state.endpoint.lock().unwrap().clone(),
+        api_format: state.api_format.lock().unwrap().clone(),
+        system_prompt: SYSTEM_PROMPT.to_string(),
+        system_prompt_customized: false,
+        history_mode: state.history_mode.lock().unwrap().clone(),
+        history_limit: *state.history_limit.lock().unwrap(),
+        max_tokens: *state.max_tokens.lock().unwrap(),
+    };
+    settings::save(&state.app_data_dir, &s);
 }
 
 #[tauri::command]
@@ -245,6 +259,43 @@ pub struct AiResponse {
     pub game_state: GameState,
 }
 
+fn sync_post_combat_state(gs: &mut GameState) {
+    use crate::engine::combat::CombatState;
+    use crate::engine::game_state::GamePhase;
+
+    match gs.combat.state {
+        CombatState::Victory | CombatState::Fled | CombatState::OutOfCombat => {
+            gs.phase = GamePhase::Playing;
+        }
+        CombatState::Defeat => {
+            gs.phase = GamePhase::GameOver;
+        }
+        _ => {
+            gs.phase = GamePhase::Combat;
+        }
+    }
+}
+
+fn resolve_enemy_opening_turn(gs: &mut GameState) {
+    use crate::engine::combat::CombatState;
+
+    if gs.combat.state != CombatState::EnemyTurn {
+        return;
+    }
+
+    if let Some(enemy_id) = gs.combat.turn_order.get(gs.combat.current_turn_idx).cloned() {
+        if let Some(enemy_result) = gs.combat.enemy_auto_turn(&enemy_id) {
+            gs.add_story_entry(EntrySource::System, &enemy_result.description);
+        }
+    }
+
+    if let Some(c) = gs.combat.combatants.iter().find(|c| c.id == gs.player.id) {
+        gs.player.hp = c.hp;
+    }
+
+    sync_post_combat_state(gs);
+}
+
 #[tauri::command]
 pub async fn send_to_ai(
     player_input: String,
@@ -263,6 +314,9 @@ pub async fn send_to_ai(
     let history_limit = *state.history_limit.lock().unwrap();
     let max_tokens    = *state.max_tokens.lock().unwrap();
     let full_history  = state.ai_history.lock().unwrap().clone();
+
+    // Store for potential regenerate
+    *state.last_player_input.lock().unwrap() = player_input.clone();
 
     // Build compact context + player input
     let context = {
@@ -298,6 +352,69 @@ pub async fn send_to_ai(
             }
         }
 
+        // Post-process npc_posture: apply relation floor, inject combat choices, auto-start if hostile
+        let posture_level = |p: &str| -> i32 { match p { "hostile" => 3, "tense" => 2, "reluctant" => 1, _ => 0 } };
+        let npc_ids: Vec<String> = parsed.commands.iter()
+            .filter(|c| c.verb == "npc_posture")
+            .filter_map(|c| c.args.get(0).cloned())
+            .collect();
+
+        for id in &npc_ids {
+            let raw_posture = gs.flags.get(&format!("npc_{}_posture_raw", id))
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_else(|| "calm".to_string());
+            let name = gs.flags.get(&format!("npc_{}_name", id))
+                .and_then(|v| v.as_str().map(|s| s.to_string()))
+                .unwrap_or_else(|| id.replace('_', " "));
+
+            // Relation floor: hostile NPCs can't be talked below tense
+            let relation_score = gs.relations.relations.get(id).map(|r| r.score).unwrap_or(0);
+            let floor = if relation_score < -75 { "hostile" } else if relation_score < -50 { "tense" } else { "" };
+            let effective = if !floor.is_empty() && posture_level(floor) > posture_level(&raw_posture) {
+                floor.to_string()
+            } else {
+                raw_posture.clone()
+            };
+
+            gs.set_flag(&format!("npc_{}_posture", id), serde_json::Value::String(effective.clone()));
+
+            // Retrieve AI-provided stats; fall back to placeholder if AI forgot npc_stats
+            let hp  = gs.flags.get(&format!("npc_{}_hp",  id)).and_then(|v| v.as_i64()).unwrap_or(20) as i32;
+            let atk = gs.flags.get(&format!("npc_{}_atk", id)).and_then(|v| v.as_i64()).unwrap_or(5)  as i32;
+            let def = gs.flags.get(&format!("npc_{}_def", id)).and_then(|v| v.as_i64()).unwrap_or(12) as i32;
+
+            match effective.as_str() {
+                "hostile" if gs.phase != crate::engine::game_state::GamePhase::Combat => {
+                    use crate::engine::combat::Combatant;
+                    let player_c = Combatant::from_character(&gs.player);
+                    let enemy = Combatant::new_enemy(id, &name, hp, atk, def);
+                    gs.combat.start(vec![player_c, enemy]);
+                    gs.phase = crate::engine::game_state::GamePhase::Combat;
+                    let msg = format!("{} turns hostile — combat begins.", name);
+                    cmd_log.push(msg.clone());
+                    gs.add_story_entry(EntrySource::System, &msg);
+                    resolve_enemy_opening_turn(&mut gs);
+                }
+                "tense" => {
+                    gs.choices.push(crate::engine::game_state::PlayerChoice {
+                        id: format!("escalate_{}", id),
+                        text: format!("Escalate the confrontation with {}", name),
+                        style: crate::engine::game_state::ChoiceStyle::Danger,
+                        tags: vec!["combat_push".to_string()],
+                    });
+                }
+                "reluctant" => {
+                    gs.choices.push(crate::engine::game_state::PlayerChoice {
+                        id: format!("force_fight_{}", id),
+                        text: format!("Force the fight with {}", name),
+                        style: crate::engine::game_state::ChoiceStyle::Danger,
+                        tags: vec!["combat_push".to_string()],
+                    });
+                }
+                _ => {}
+            }
+        }
+
         // Log AI narrative
         gs.add_story_entry(EntrySource::Narrator, &parsed.clean_text);
     }
@@ -323,6 +440,105 @@ pub async fn send_to_ai(
 #[tauri::command]
 pub fn clear_ai_history(state: State<AppState>) {
     state.ai_history.lock().unwrap().clear();
+}
+
+#[tauri::command]
+pub fn go_to_menu(state: State<AppState>) -> GameState {
+    *state.game.lock().unwrap() = GameState::new();
+    *state.ai_history.lock().unwrap() = Vec::new();
+    *state.last_player_input.lock().unwrap() = String::new();
+    state.game.lock().unwrap().clone()
+}
+
+#[tauri::command]
+pub async fn regenerate_last(
+    state: State<'_, AppState>,
+) -> Result<AiResponse, String> {
+    let api_key = state.api_key.lock().unwrap().clone();
+    if api_key.is_empty() {
+        return Err("API key not set.".to_string());
+    }
+
+    let player_input = {
+        let cached = state.last_player_input.lock().unwrap().clone();
+        if !cached.is_empty() {
+            cached
+        } else {
+            // Fall back to the last Player entry in the story log (e.g. after loading a save)
+            let gs = state.game.lock().unwrap();
+            gs.story_log.iter().rev()
+                .find(|e| e.source == crate::engine::game_state::EntrySource::Player)
+                .map(|e| e.text.clone())
+                .unwrap_or_default()
+        }
+    };
+    if player_input.is_empty() {
+        return Err("Nothing to regenerate.".to_string());
+    }
+
+    // Roll back history by one turn
+    {
+        let mut hist = state.ai_history.lock().unwrap();
+        let new_len = hist.len().saturating_sub(2);
+        hist.truncate(new_len);
+    }
+
+    // Roll back story log
+    {
+        let mut gs = state.game.lock().unwrap();
+        gs.trim_last_turn();
+        gs.clear_choices();
+    }
+
+    let model         = state.model.lock().unwrap().clone();
+    let endpoint      = state.endpoint.lock().unwrap().clone();
+    let api_format    = state.api_format.lock().unwrap().clone();
+    let system_prompt = state.system_prompt.lock().unwrap().clone();
+    let history_mode  = state.history_mode.lock().unwrap().clone();
+    let history_limit = *state.history_limit.lock().unwrap();
+    let max_tokens    = *state.max_tokens.lock().unwrap();
+    let full_history  = state.ai_history.lock().unwrap().clone();
+
+    let context = {
+        let gs = state.game.lock().unwrap();
+        gs.build_ai_context()
+    };
+    let full_message = format!("{}\n\nPlayer: {}", context, player_input);
+
+    let client = AiClient::new(api_key, endpoint, model, api_format);
+    let send_history = truncate_for_send(&full_history, &history_mode, history_limit);
+    let raw_response = client.send(&system_prompt, send_history, &full_message, max_tokens).await?;
+
+    let parsed = parser::parse_ai_response(&raw_response);
+
+    let mut cmd_log: Vec<String> = Vec::new();
+    {
+        let mut gs = state.game.lock().unwrap();
+        gs.add_story_entry(EntrySource::Player, &player_input);
+        for cmd in &parsed.commands {
+            if let Some(msg) = apply_command(&mut gs, cmd) {
+                cmd_log.push(msg.clone());
+                gs.add_story_entry(EntrySource::System, &msg);
+            }
+        }
+        gs.add_story_entry(EntrySource::Narrator, &parsed.clean_text);
+    }
+
+    {
+        let mut hist = state.ai_history.lock().unwrap();
+        hist.push(ApiMessage { role: "user".to_string(), content: full_message });
+        hist.push(ApiMessage { role: "assistant".to_string(), content: raw_response });
+        while hist.len() > 400 {
+            hist.drain(0..2);
+        }
+    }
+
+    let game_state = state.game.lock().unwrap().clone();
+    Ok(AiResponse {
+        narrative: parsed.clean_text,
+        commands_applied: cmd_log,
+        game_state,
+    })
 }
 
 // ── Save / Load ──────────────────────────────────────────────────────────────
@@ -386,16 +602,60 @@ pub fn equip_item(slot_idx: usize, state: State<AppState>) -> Result<GameState, 
 }
 
 #[tauri::command]
+pub fn force_npc_combat(npc_id: String, state: State<AppState>) -> GameState {
+    use crate::engine::combat::Combatant;
+    let mut gs = state.game.lock().unwrap();
+    let name = gs.flags.get(&format!("npc_{}_name", npc_id))
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_else(|| npc_id.replace('_', " "));
+    let hp  = gs.flags.get(&format!("npc_{}_hp",  npc_id)).and_then(|v| v.as_i64()).unwrap_or(20) as i32;
+    let atk = gs.flags.get(&format!("npc_{}_atk", npc_id)).and_then(|v| v.as_i64()).unwrap_or(5)  as i32;
+    let def = gs.flags.get(&format!("npc_{}_def", npc_id)).and_then(|v| v.as_i64()).unwrap_or(12) as i32;
+    let player_c = Combatant::from_character(&gs.player);
+    let enemy = Combatant::new_enemy(&npc_id, &name, hp, atk, def);
+    gs.combat.start(vec![player_c, enemy]);
+    gs.phase = crate::engine::game_state::GamePhase::Combat;
+    gs.clear_choices();
+    gs.add_story_entry(EntrySource::System, &format!("You force the fight with {} — combat begins.", name));
+    resolve_enemy_opening_turn(&mut gs);
+    gs.clone()
+}
+
+#[tauri::command]
+pub fn force_start_combat(
+    enemy_name: String,
+    hp: i32,
+    atk: i32,
+    def: i32,
+    state: State<AppState>,
+) -> GameState {
+    use crate::engine::combat::Combatant;
+    let mut gs = state.game.lock().unwrap();
+    let enemy_id = enemy_name.to_lowercase().replace(' ', "_");
+    let player_combatant = Combatant::from_character(&gs.player);
+    let enemy = Combatant::new_enemy(&enemy_id, &enemy_name, hp, atk, def);
+    gs.combat.start(vec![player_combatant, enemy]);
+    gs.phase = crate::engine::game_state::GamePhase::Combat;
+    gs.add_story_entry(EntrySource::System, &format!("Combat started: {}", enemy_name));
+    resolve_enemy_opening_turn(&mut gs);
+    gs.clone()
+}
+
+#[tauri::command]
 pub fn player_attack(target_id: String, state: State<AppState>) -> Result<GameState, String> {
     let mut gs = state.game.lock().unwrap();
     let player_id = gs.player.id.clone();
     let result = gs.combat.resolve_attack(&player_id, &target_id);
-    // Sync player HP from combat
+    gs.add_story_entry(EntrySource::System, &result.description);
+    gs.combat.end_turn();
+
     if let Some(c) = gs.combat.combatants.iter().find(|c| c.id == player_id) {
         gs.player.hp = c.hp;
     }
-    gs.add_story_entry(EntrySource::System, &result.description);
-    gs.combat.end_turn();
+
+    resolve_enemy_opening_turn(&mut gs);
+    sync_post_combat_state(&mut gs);
+
     Ok(gs.clone())
 }
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gameState, loadGameState, createCharacter, resetGame, lastError, isLoading } from '$lib/stores/gameStore';
+  import { gameState, loadGameState, createCharacter, resetGame, lastError, isLoading, goToMenu, listSaves, loadGame } from '$lib/stores/gameStore';
+  import type { SaveMetadata } from '$lib/types';
   import CharacterPanel from '$lib/components/CharacterPanel.svelte';
   import InventoryPanel from '$lib/components/InventoryPanel.svelte';
   import StoryLog from '$lib/components/StoryLog.svelte';
@@ -22,9 +23,28 @@
   const races = ['Human','Elf','Dwarf','Halfling','Orc'];
   const classes = ['Warrior','Mage','Rogue','Cleric','Ranger','Bard'];
 
+  let menuSaves = $state<Array<SaveMetadata | null>>([]);
+  const mostRecentSave = $derived(
+    menuSaves
+      .map((s, i) => s ? { ...s, slot: i } : null)
+      .filter(Boolean)
+      .sort((a, b) => parseInt(b!.saved_at) - parseInt(a!.saved_at))[0] ?? null
+  );
+
   onMount(async () => {
     await loadGameState();
   });
+
+  $effect(() => {
+    if ($gameState?.phase === 'MainMenu') {
+      listSaves().then(s => { menuSaves = s; });
+    }
+  });
+
+  async function handleContinue() {
+    if (!mostRecentSave) return;
+    await loadGame(mostRecentSave.slot);
+  }
 
   async function handleCreateChar() {
     if (!charForm.name.trim()) return;
@@ -132,10 +152,16 @@
     </div>
     <div class="header-actions">
       {#if $gameState?.phase === 'Playing' || $gameState?.phase === 'Combat'}
-        <button class="icon-btn" onclick={handleNewGame} title="New Game">&#x21BA;</button>
-        <button class="icon-btn" onclick={() => showSaveLoad = true} title="Save / Load">&#x1F4BE;</button>
+        <button class="icon-btn" onclick={goToMenu} title="Main Menu">
+          {@html `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,5 8,1 15,5"/><rect x="3" y="5" width="10" height="10" rx="1"/><rect x="6" y="9" width="4" height="6"/></svg>`}
+        </button>
+        <button class="icon-btn" onclick={() => showSaveLoad = true} title="Save / Load">
+          {@html `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><rect x="5" y="2" width="6" height="4.5" rx="0.5"/><rect x="4" y="9" width="8" height="5" rx="0.5"/></svg>`}
+        </button>
       {/if}
-      <button class="icon-btn" onclick={() => showSettings = true} title="Settings">&#x2699;</button>
+      <button class="icon-btn" onclick={() => showSettings = true} title="Settings">
+        {@html `<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M12.9 3.1l-1.4 1.4M4.5 11.5l-1.4 1.4"/></svg>`}
+      </button>
     </div>
   </header>
 
@@ -143,26 +169,24 @@
     <div class="main-menu-shell">
       <div class="main-menu-backdrop"></div>
       <div class="main-menu-card">
-        <div class="menu-kicker">AI-Driven Campaign Interface</div>
-        <h1 class="menu-title">AutoRPG</h1>
-        <p class="menu-sub">A dramatic command deck for character stories, evolving quests, and world-state-driven play.</p>
-        <div class="menu-feature-grid">
-          <div class="menu-feature">
-            <span class="feature-label">Reactive narration</span>
-            <span class="feature-copy">Scene text, combat beats, and systemic updates live in one flowing timeline.</span>
-          </div>
-          <div class="menu-feature">
-            <span class="feature-label">Quest intelligence</span>
-            <span class="feature-copy">Plans, objectives, and rewards stay visible instead of disappearing into the log.</span>
-          </div>
-          <div class="menu-feature">
-            <span class="feature-label">World awareness</span>
-            <span class="feature-copy">Track weather, time, region type, and social hooks at a glance.</span>
-          </div>
+        <div class="menu-brand">
+          <span class="menu-logo-mark">
+            {@html `<svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"><path d="M10 1 L12.2 7.8 L19 10 L12.2 12.2 L10 19 L7.8 12.2 L1 10 L7.8 7.8 Z"/><circle cx="10" cy="10" r="1.8" fill="currentColor" stroke="none"/></svg>`}
+          </span>
+          <h1 class="menu-title">AutoRPG</h1>
         </div>
+        <p class="menu-tagline">An AI-narrated RPG with a deterministic game engine.</p>
         <div class="menu-actions">
-          <button class="menu-btn primary" onclick={handleNewGame}>Start New Adventure</button>
-          <button class="menu-btn secondary" onclick={() => showSettings = true}>Tune the Engine</button>
+          {#if mostRecentSave}
+            <button class="menu-btn primary" onclick={handleContinue}>
+              Continue — {mostRecentSave.player_name}
+            </button>
+          {/if}
+          <button class="menu-btn" class:secondary={!!mostRecentSave} class:primary={!mostRecentSave} onclick={handleNewGame}>New Game</button>
+          {#if menuSaves.some(s => s !== null)}
+            <button class="menu-btn secondary" onclick={() => showSaveLoad = true}>Load Game</button>
+          {/if}
+          <button class="menu-btn ghost" onclick={() => showSettings = true}>Settings</button>
         </div>
       </div>
     </div>
@@ -344,21 +368,47 @@
   .icon-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
   .game-layout-shell { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .main-menu-shell { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; padding: 32px; overflow: hidden; }
-  .main-menu-backdrop { position: absolute; inset: 0; background:
-      radial-gradient(circle at top, color-mix(in srgb, var(--accent) 10%, transparent), transparent 45%),
-      linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 92%, transparent), var(--bg-base)); }
-  .main-menu-card { position: relative; width: min(720px, 100%); display: flex; flex-direction: column; gap: 18px; padding: 32px; background: color-mix(in srgb, var(--bg-surface) 94%, transparent); border: 1px solid var(--border); border-radius: calc(var(--radius-lg) + 4px); box-shadow: var(--shadow-modal); backdrop-filter: blur(10px); }
-  .menu-kicker { font-size: var(--font-size-xs); text-transform: uppercase; letter-spacing: 1.8px; color: var(--text-muted); }
-  .menu-title { font-size: clamp(40px, 7vw, 64px); line-height: 0.95; font-weight: 800; color: var(--text-primary); margin: 0; }
-  .menu-sub { max-width: 60ch; color: var(--text-secondary); margin: 0; font-size: var(--font-size-md); line-height: 1.7; }
-  .menu-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .menu-feature { display: flex; flex-direction: column; gap: 6px; padding: 14px; background: color-mix(in srgb, var(--bg-elevated) 88%, transparent); border: 1px solid var(--border); border-radius: var(--radius-md); }
-  .feature-label { font-size: var(--font-size-xs); text-transform: uppercase; letter-spacing: 1px; color: var(--accent); }
-  .feature-copy { font-size: var(--font-size-sm); line-height: 1.65; color: var(--text-secondary); }
-  .menu-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-  .menu-btn { padding: 12px 32px; background: var(--accent-dim); border: 1px solid var(--accent); border-radius: var(--radius-md); color: var(--accent); font-size: 16px; cursor: pointer; font-family: var(--font-ui); }
-  .menu-btn:hover { filter: brightness(1.08); }
-  .menu-btn.secondary { background: var(--bg-elevated); border-color: var(--border); color: var(--text-secondary); }
+  .main-menu-backdrop {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent),
+      var(--bg-base);
+  }
+  .main-menu-card {
+    position: relative;
+    width: min(400px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 40px 36px;
+    background: color-mix(in srgb, var(--bg-surface) 96%, transparent);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-modal);
+  }
+  .menu-brand { display: flex; align-items: center; gap: 12px; }
+  .menu-logo-mark { color: var(--accent); display: flex; align-items: center; opacity: 0.9; }
+  .menu-logo-mark :global(svg) { display: block; }
+  .menu-title { font-size: 32px; font-weight: 800; color: var(--text-primary); margin: 0; letter-spacing: -0.5px; }
+  .menu-tagline { font-size: var(--font-size-sm); color: var(--text-muted); margin: 0; line-height: 1.6; }
+  .menu-actions { display: flex; flex-direction: column; gap: 8px; }
+  .menu-btn {
+    width: 100%;
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-md);
+    font-family: var(--font-ui);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: filter var(--transition), background var(--transition), border-color var(--transition);
+  }
+  .menu-btn.primary { background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent); }
+  .menu-btn.primary:hover { filter: brightness(1.1); }
+  .menu-btn.secondary { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); }
+  .menu-btn.secondary:hover { border-color: var(--accent); color: var(--text-primary); }
+  .menu-btn.ghost { background: none; border: 1px solid transparent; color: var(--text-muted); }
+  .menu-btn.ghost:hover { color: var(--text-secondary); border-color: var(--border); }
   .game-layout { flex: 1; min-height: 0; display: flex; overflow: hidden; }
 
   /* ── Collapsible left panel ── */
@@ -458,7 +508,6 @@
     .header { min-height: auto; padding: 8px 12px; flex-direction: column; align-items: flex-start; gap: 4px; }
     .header-context { align-items: flex-start; }
     .main-menu-shell { padding: 16px; }
-    .main-menu-card { padding: 20px; }
-    .menu-feature-grid { grid-template-columns: 1fr; }
+    .main-menu-card { padding: 24px 20px; }
   }
 </style>

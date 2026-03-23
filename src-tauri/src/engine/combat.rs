@@ -172,22 +172,22 @@ impl Combat {
         let attacker = self.combatants.iter().find(|c| c.id == attacker_id).cloned();
         let target = self.combatants.iter().find(|c| c.id == target_id).cloned();
 
-        let (Some(attacker), Some(_target)) = (attacker, target) else {
+        let (Some(attacker), Some(target_snapshot)) = (attacker, target) else {
             return CombatResult {
                 hit: false, damage: 0, roll: 0,
-                vs_defense: 0, description: "Invalid combatant".to_string(),
+                vs_defense: 0, description: "The attack goes nowhere.".to_string(),
                 critical: false, miss: true,
             };
         };
 
         let attack_roll = dice::roll("d20");
         let total_attack = attack_roll.total + attacker.attack;
-        let target_def = self.combatants.iter().find(|c| c.id == target_id).map(|c| c.defense).unwrap_or(10);
+        let target_def = target_snapshot.defense;
         let critical = attack_roll.rolls.first() == Some(&20);
         let fumble = attack_roll.rolls.first() == Some(&1);
 
         if fumble {
-            let msg = format!("{} fumbles! (rolled 1)", attacker.name);
+            let msg = format!("{} overcommits and leaves an opening instead of landing the blow.", attacker.name);
             self.log.log(&msg);
             return CombatResult { hit: false, damage: 0, roll: 1, vs_defense: target_def, description: msg, critical: false, miss: true };
         }
@@ -196,24 +196,34 @@ impl Combat {
             let damage_dice = if critical { "2d6" } else { "1d6" };
             let dmg_roll = dice::roll(damage_dice);
             let damage = (dmg_roll.total + attacker.attack / 2).max(1);
+            let target_name = target_snapshot.name.clone();
 
+            let mut defeated = false;
             if let Some(target) = self.combatants.iter_mut().find(|c| c.id == target_id) {
                 target.hp -= damage;
                 if target.hp <= 0 {
                     target.hp = 0;
                     target.is_alive = false;
+                    defeated = true;
                 }
             }
 
-            let crit_str = if critical { " CRITICAL HIT!" } else { "" };
-            let msg = format!("{} hits {} for {} damage{}", attacker.name,
-                self.combatants.iter().find(|c| c.id == target_id).map(|c| c.name.as_str()).unwrap_or("target"),
-                damage, crit_str);
+            let msg = if critical {
+                if defeated {
+                    format!("{} drives a crushing blow into {}, dropping them where they stand.", attacker.name, target_name)
+                } else {
+                    format!("{} lands a brutal strike on {}, tearing through their guard for {} damage.", attacker.name, target_name, damage)
+                }
+            } else if defeated {
+                format!("{} strikes true and drops {} with a final hit.", attacker.name, target_name)
+            } else {
+                format!("{} hits {} for {} damage.", attacker.name, target_name, damage)
+            };
             self.log.log(&msg);
 
             CombatResult { hit: true, damage, roll: total_attack, vs_defense: target_def, description: msg, critical, miss: false }
         } else {
-            let msg = format!("{} misses! (rolled {} vs AC {})", attacker.name, total_attack, target_def);
+            let msg = format!("{} lashes out, but {} slips clear of the attack.", attacker.name, target_snapshot.name);
             self.log.log(&msg);
             CombatResult { hit: false, damage: 0, roll: total_attack, vs_defense: target_def, description: msg, critical: false, miss: true }
         }

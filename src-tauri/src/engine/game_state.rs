@@ -149,6 +149,14 @@ impl GameState {
         }
     }
 
+    /// Remove the last player turn and everything after it from the story log.
+    /// Used by regenerate to roll back before re-sending.
+    pub fn trim_last_turn(&mut self) {
+        if let Some(idx) = self.story_log.iter().rposition(|e| e.source == EntrySource::Player) {
+            self.story_log.truncate(idx);
+        }
+    }
+
     pub fn set_choices(&mut self, choices: Vec<PlayerChoice>) {
         self.choices = choices;
     }

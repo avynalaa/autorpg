@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { storyLog, isLoading } from '../stores/gameStore';
+  import { storyLog, isLoading, regenerateLast } from '../stores/gameStore';
   import { marked } from 'marked';
 
   marked.setOptions({ breaks: true, gfm: true });
@@ -17,26 +17,43 @@
   });
 
   function renderMarkdown(text: string): string {
-    // The AI sometimes outputs markdown headings (# / ##) despite the system prompt
-    // forbidding them. Strip the heading syntax so they render as normal paragraphs.
     const clean = text.replace(/^#{1,6}\s+(.+)$/gm, '$1');
     return marked.parse(clean, { async: false }) as string;
   }
 
-  // Strip the [Choice: ...] wrapper that gets sent to the AI backend —
-  // display only the human-readable text.
   function playerDisplay(text: string): string {
     const m = text.match(/^\[Choice:\s*(.*)\]$/s);
     return m ? m[1] : text;
   }
+
+  const lastNarratorIdx = $derived(
+    (() => {
+      for (let i = $storyLog.length - 1; i >= 0; i--) {
+        if ($storyLog[i].source === 'Narrator') return i;
+      }
+      return -1;
+    })()
+  );
+
+  async function handleRegenerate() {
+    if ($isLoading) return;
+    await regenerateLast();
+  }
+
+  const regenSVG = `<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.1-3.3"/><polyline points="14,2 13.5,5.5 10,5"/></svg>`;
 </script>
 
 <div class="story-wrap">
   <div class="log" bind:this={logEl}>
-    {#each $storyLog as entry (entry.id)}
+    {#each $storyLog as entry, i (entry.id)}
       {#if entry.source === 'Narrator'}
-        <div class="entry-narrator markdown-content">
+        <div class="entry-narrator markdown-content" class:is-last={i === lastNarratorIdx}>
           {@html renderMarkdown(entry.text)}
+          {#if i === lastNarratorIdx && !$isLoading}
+            <button class="regen-btn" onclick={handleRegenerate} title="Regenerate">
+              {@html regenSVG}
+            </button>
+          {/if}
         </div>
       {:else if entry.source === 'Player'}
         <div class="entry-player">
@@ -83,6 +100,7 @@
 
   /* ── Narrator ── */
   .entry-narrator {
+    position: relative;
     padding: 14px 18px;
     font-family: var(--font-narrative);
     font-size: var(--font-size-narrative);
@@ -92,6 +110,36 @@
     border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   }
   .entry-narrator:first-child { border-top: none; }
+
+  /* ── Regenerate button ── */
+  .regen-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-xs);
+    color: var(--text-muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--transition), color var(--transition), border-color var(--transition), background var(--transition);
+  }
+  .entry-narrator.is-last:hover .regen-btn,
+  .regen-btn:focus {
+    opacity: 1;
+  }
+  .regen-btn:hover {
+    color: var(--accent);
+    border-color: var(--border);
+    background: var(--bg-elevated);
+    opacity: 1;
+  }
+  .regen-btn :global(svg) { display: block; }
 
   /* ── Player action ── */
   .entry-player {

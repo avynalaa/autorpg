@@ -46,6 +46,8 @@ pub fn run() {
             // AI
             send_to_ai,
             clear_ai_history,
+            regenerate_last,
+            go_to_menu,
             // Save / Load
             save_game_cmd,
             load_game_cmd,
@@ -59,6 +61,8 @@ pub fn run() {
             equip_item,
             // Combat
             player_attack,
+            force_npc_combat,
+            force_start_combat,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

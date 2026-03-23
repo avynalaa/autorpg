@@ -3,11 +3,43 @@ use crate::engine::{
     game_state::{GameState, EntrySource, PlayerChoice, ChoiceStyle},
     inventory::{Item, ItemCategory},
     quest::{Quest, QuestObjective, QuestStatus},
-    combat::Combatant,
+    combat::{Combat, Combatant, CombatState},
     memory::MemoryCategory,
     map::{Location, LocationType},
 };
 use crate::ai::parser::ParsedCommand;
+
+fn sync_post_combat_state(state: &mut GameState) {
+    use crate::engine::game_state::GamePhase;
+
+    match state.combat.state {
+        CombatState::Victory | CombatState::Fled | CombatState::OutOfCombat => {
+            state.phase = GamePhase::Playing;
+        }
+        CombatState::Defeat => {
+            state.phase = GamePhase::GameOver;
+        }
+        _ => {
+            state.phase = GamePhase::Combat;
+        }
+    }
+}
+
+fn resolve_enemy_opening_turn(state: &mut GameState) -> Option<String> {
+    if state.combat.state != CombatState::EnemyTurn {
+        return None;
+    }
+
+    let enemy_id = state.combat.turn_order.get(state.combat.current_turn_idx)?.clone();
+    let enemy_result = state.combat.enemy_auto_turn(&enemy_id)?;
+
+    if let Some(player) = state.combat.combatants.iter().find(|c| c.id == state.player.id) {
+        state.player.hp = player.hp;
+    }
+
+    sync_post_combat_state(state);
+    Some(enemy_result.description)
+}
 
 pub fn apply_command(state: &mut GameState, cmd: &ParsedCommand) -> Option<String> {
     let args = &cmd.args;
@@ -191,6 +223,28 @@ pub fn apply_command(state: &mut GameState, cmd: &ParsedCommand) -> Option<Strin
             Some(format!("Relation {} {}{}", name, if delta >= 0 { "+" } else { "" }, delta))
         }
 
+        // ── NPC Posture / Stats ────────────────────────────────────────
+        // Store raw posture flag; send_to_ai applies relation floor and injects choices.
+        "npc_posture" => {
+            let id = args.get(0)?.clone();
+            let name = args.get(1).cloned().unwrap_or_else(|| id.replace('_', " "));
+            let posture = args.get(2).cloned().unwrap_or_else(|| "calm".to_string()).to_lowercase();
+            state.set_flag(&format!("npc_{}_posture_raw", id), serde_json::Value::String(posture.clone()));
+            state.set_flag(&format!("npc_{}_name", id), serde_json::Value::String(name.clone()));
+            None // silent — post-processing in send_to_ai emits the log entry
+        }
+
+        "npc_stats" => {
+            let id = args.get(0)?.clone();
+            let hp: i32 = args.get(1)?.parse().ok()?;
+            let atk: i32 = args.get(2)?.parse().ok()?;
+            let def: i32 = args.get(3)?.parse().ok()?;
+            state.set_flag(&format!("npc_{}_hp", id), serde_json::Value::Number(hp.into()));
+            state.set_flag(&format!("npc_{}_atk", id), serde_json::Value::Number(atk.into()));
+            state.set_flag(&format!("npc_{}_def", id), serde_json::Value::Number(def.into()));
+            Some(format!("NPC stats set: id={} hp={} atk={} def={}", id, hp, atk, def))
+        }
+
         // ── Memory / Time ──────────────────────────────────────────────
         "record_event" => {
             let importance: u8 = args.get(0)?.parse().ok()?;
@@ -337,11 +391,19 @@ pub fn apply_command(state: &mut GameState, cmd: &ParsedCommand) -> Option<Strin
             let player_combatant = crate::engine::combat::Combatant::from_character(&state.player);
             let enemy = Combatant::new_enemy(&enemy_id, &name, hp, atk, def);
             state.combat.start(vec![player_combatant, enemy]);
-            Some(format!("Combat started vs {}", name))
+            sync_post_combat_state(state);
+
+            let start_msg = format!("Combat started vs {}", name);
+            if let Some(enemy_msg) = resolve_enemy_opening_turn(state) {
+                Some(format!("{}\n{}", start_msg, enemy_msg))
+            } else {
+                Some(start_msg)
+            }
         }
 
         "end_combat" => {
-            state.combat = crate::engine::combat::Combat::new();
+            state.combat = Combat::new();
+            sync_post_combat_state(state);
             Some("Combat ended".to_string())
         }
 

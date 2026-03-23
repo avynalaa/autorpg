@@ -11,7 +11,10 @@ pub struct PersistedSettings {
     pub model: String,
     pub endpoint: String,
     pub api_format: String,
+    #[serde(default)]
     pub system_prompt: String,
+    #[serde(default)]
+    pub system_prompt_customized: bool,
     #[serde(default = "default_history_mode")]
     pub history_mode: String,
     #[serde(default = "default_history_limit")]
@@ -40,6 +43,7 @@ impl Default for PersistedSettings {
             endpoint: "https://api.anthropic.com".to_string(),
             api_format: "auto".to_string(),
             system_prompt: SYSTEM_PROMPT.to_string(),
+            system_prompt_customized: false,
             history_mode: default_history_mode(),
             history_limit: default_history_limit(),
             max_tokens: default_max_tokens(),
@@ -54,7 +58,11 @@ pub fn settings_path(app_data_dir: &PathBuf) -> PathBuf {
 pub fn load(app_data_dir: &PathBuf) -> PersistedSettings {
     let path = settings_path(app_data_dir);
     if let Ok(text) = fs::read_to_string(&path) {
-        if let Ok(s) = serde_json::from_str::<PersistedSettings>(&text) {
+        if let Ok(mut s) = serde_json::from_str::<PersistedSettings>(&text) {
+            if s.system_prompt.trim().is_empty() || !s.system_prompt_customized {
+                s.system_prompt = SYSTEM_PROMPT.to_string();
+                s.system_prompt_customized = false;
+            }
             return s;
         }
     }

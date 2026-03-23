@@ -132,6 +132,16 @@ export async function playerAttack(targetId: string) {
   gameState.set(gs);
 }
 
+export async function forceStartCombat(enemyName: string, hp: number, atk: number, def: number) {
+  const gs = await invoke<GameState>('force_start_combat', { enemyName, hp, atk, def });
+  gameState.set(gs);
+}
+
+export async function forceNpcCombat(npcId: string) {
+  const gs = await invoke<GameState>('force_npc_combat', { npcId });
+  gameState.set(gs);
+}
+
 export async function setHistoryMode(mode: string) {
   await invoke('set_history_mode', { mode });
 }
@@ -142,6 +152,27 @@ export async function setHistoryLimit(limit: number) {
 
 export async function setMaxTokens(tokens: number) {
   await invoke('set_max_tokens', { tokens });
+}
+
+export async function regenerateLast(): Promise<AiResponse> {
+  isLoading.set(true);
+  lastError.set(null);
+  try {
+    const result = await invoke<AiResponse>('regenerate_last');
+    gameState.set(result.game_state);
+    return result;
+  } catch (e) {
+    const msg = String(e);
+    lastError.set(msg);
+    throw e;
+  } finally {
+    isLoading.set(false);
+  }
+}
+
+export async function goToMenu(): Promise<void> {
+  const gs = await invoke<GameState>('go_to_menu');
+  gameState.set(gs);
 }
 
 export async function listSaves(): Promise<Array<SaveMetadata | null>> {

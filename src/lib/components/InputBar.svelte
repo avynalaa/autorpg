@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sendToAI, isLoading, choices } from '../stores/gameStore';
+  import { sendToAI, isLoading, choices, forceNpcCombat } from '../stores/gameStore';
 
   let input = $state('');
 
@@ -23,6 +23,14 @@
 
   async function pickChoice(id: string, text: string) {
     if ($isLoading) return;
+    if (id.startsWith('escalate_')) {
+      await forceNpcCombat(id.slice('escalate_'.length));
+      return;
+    }
+    if (id.startsWith('force_fight_')) {
+      await forceNpcCombat(id.slice('force_fight_'.length));
+      return;
+    }
     await sendToAI(`[Choice: ${stripEmoji(text)}]`);
   }
 

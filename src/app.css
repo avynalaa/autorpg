@@ -1,0 +1,1022 @@
+@import "tailwindcss";
+
+/* ============================================================
+   THEME CSS VARIABLES
+   ============================================================ */
+
+/* ── SLATE  (modern dark, default) ──────────────────────────── */
+:root,
+[data-theme="slate"] {
+  --bg-base:     #11111b;
+  --bg-surface:  #1e1e2e;
+  --bg-elevated: #181825;
+  --bg-hover:    #313244;
+  --bg-active:   #45475a;
+
+  --border:        #313244;
+  --border-focus:  #89b4fa;
+  --border-accent: #89b4fa33;
+
+  --text-primary:   #cdd6f4;
+  --text-secondary: #a6adc8;
+  --text-muted:     #6c7086;
+
+  --accent:      #89b4fa;
+  --accent-dim:  #1e3a5f;
+  --success:     #a6e3a1;
+  --success-dim: #0f2d1a;
+  --warning:     #f9e2af;
+  --danger:      #f38ba8;
+  --danger-dim:  #2d0f0f;
+  --special:     #cba6f7;
+  --special-dim: #2a1f3b;
+
+  --item-weapon-bg:     #3b1f1f;
+  --item-armor-bg:      #1f2a3b;
+  --item-consumable-bg: #1f3b1f;
+  --item-quest-bg:      #2a1f3b;
+
+  --entry-narrator-bg:     #1e1e2e;
+  --entry-narrator-border: #89b4fa;
+  --entry-player-color:    #a6e3a1;
+  --entry-system-color:    #f9e2af;
+  --entry-internal-color:  #6c7086;
+
+  --font-ui:        'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-narrative: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:      'Consolas', 'Courier New', monospace;
+
+  --font-size-xs:          10px;
+  --font-size-sm:          12px;
+  --font-size-md:          14px;
+  --font-size-narrative:   14px;
+  --line-height-narrative: 1.6;
+
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   10px;
+  --radius-full: 9999px;
+
+  --panel-padding: 12px;
+  --layout-left:   220px;
+  --layout-right:  260px;
+
+  --transition:      0.15s ease;
+  --transition-slow: 0.3s ease;
+
+  --shadow-panel: none;
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.5);
+
+  --combat-border: #f38ba866;
+  --combat-title:  #f38ba8;
+}
+
+/* ── CODEX  (dark scholarly / literary) ─────────────────────── */
+[data-theme="codex"] {
+  --bg-base:     #0d0b08;
+  --bg-surface:  #1c1710;
+  --bg-elevated: #140f09;
+  --bg-hover:    #2a2118;
+  --bg-active:   #3a2e22;
+
+  --border:        #3a2e22;
+  --border-focus:  #d4943a;
+  --border-accent: #d4943a44;
+
+  --text-primary:   #d4c4a0;
+  --text-secondary: #b09870;
+  --text-muted:     #7a6040;
+
+  --accent:      #d4943a;
+  --accent-dim:  #2a1a08;
+  --success:     #7a9e50;
+  --success-dim: #0f1e08;
+  --warning:     #c8862a;
+  --danger:      #a03020;
+  --danger-dim:  #1e0808;
+  --special:     #7a4f8a;
+  --special-dim: #180820;
+
+  --item-weapon-bg:     #1e0c08;
+  --item-armor-bg:      #080f18;
+  --item-consumable-bg: #081408;
+  --item-quest-bg:      #120818;
+
+  --entry-narrator-bg:     #1c1710;
+  --entry-narrator-border: #d4943a;
+  --entry-player-color:    #7a9e50;
+  --entry-system-color:    #c8862a;
+  --entry-internal-color:  #7a6040;
+
+  --font-ui:        Georgia, 'Palatino Linotype', serif;
+  --font-narrative: Georgia, 'Palatino Linotype', 'Times New Roman', serif;
+  --font-mono:      'Courier New', monospace;
+
+  --font-size-xs:          10px;
+  --font-size-sm:          13px;
+  --font-size-md:          15px;
+  --font-size-narrative:   15px;
+  --line-height-narrative: 1.95;
+
+  --radius-xs:   1px;
+  --radius-sm:   1px;
+  --radius-md:   2px;
+  --radius-lg:   3px;
+  --radius-full: 3px;
+
+  --panel-padding: 16px;
+  --layout-left:   230px;
+  --layout-right:  270px;
+
+  --transition:      0.3s ease-in-out;
+  --transition-slow: 0.6s ease-in-out;
+
+  --shadow-panel: inset 0 0 24px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 24px 80px rgba(0, 0, 0, 0.85);
+
+  --combat-border: #a0302066;
+  --combat-title:  #a03020;
+}
+
+/* ── WIRE  (terminal / monospace) ────────────────────────────── */
+[data-theme="wire"] {
+  --bg-base:     #000000;
+  --bg-surface:  #040804;
+  --bg-elevated: #000000;
+  --bg-hover:    #0c140c;
+  --bg-active:   #162016;
+
+  --border:        #0d3d0d;
+  --border-focus:  #39ff14;
+  --border-accent: #39ff1430;
+
+  --text-primary:   #a8ffa8;
+  --text-secondary: #39ff14;
+  --text-muted:     #1e6b1e;
+
+  --accent:      #39ff14;
+  --accent-dim:  #001a00;
+  --success:     #00ff00;
+  --success-dim: #001400;
+  --warning:     #ffff00;
+  --danger:      #ff3344;
+  --danger-dim:  #1a0000;
+  --special:     #00ffff;
+  --special-dim: #001414;
+
+  --item-weapon-bg:     #0d0000;
+  --item-armor-bg:      #00080d;
+  --item-consumable-bg: #000d00;
+  --item-quest-bg:      #0d000d;
+
+  --entry-narrator-bg:     #020402;
+  --entry-narrator-border: #39ff14;
+  --entry-player-color:    #00ff88;
+  --entry-system-color:    #ffff00;
+  --entry-internal-color:  #1e6b1e;
+
+  --font-ui:        'Courier New', Consolas, 'Lucida Console', monospace;
+  --font-narrative: 'Courier New', Consolas, 'Lucida Console', monospace;
+  --font-mono:      'Courier New', Consolas, monospace;
+
+  --font-size-xs:          10px;
+  --font-size-sm:          11px;
+  --font-size-md:          13px;
+  --font-size-narrative:   13px;
+  --line-height-narrative: 1.75;
+
+  --radius-xs:   0;
+  --radius-sm:   0;
+  --radius-md:   0;
+  --radius-lg:   0;
+  --radius-full: 0;
+
+  --panel-padding: 10px;
+  --layout-left:   210px;
+  --layout-right:  250px;
+
+  --transition:      0.04s step-end;
+  --transition-slow: 0.08s step-end;
+
+  --shadow-panel: none;
+  --shadow-modal: 0 0 40px #39ff1418;
+
+  --combat-border: #ff334466;
+  --combat-title:  #ff3344;
+}
+
+/* ============================================================
+   GLOBAL BASE
+   ============================================================ */
+
+body {
+  margin: 0;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  overflow: hidden;
+  height: 100vh;
+  transition: background-color var(--transition-slow), color var(--transition-slow);
+}
+
+/* Codex: warm vignette */
+[data-theme="codex"] body {
+  background-image: radial-gradient(ellipse at 50% 0%, #221a10 0%, #0d0b08 65%);
+}
+
+/* Wire: phosphor glow */
+[data-theme="wire"] body {
+  text-shadow: 0 0 6px #39ff1430;
+}
+
+/* ── Codex narrative fade-in ── */
+[data-theme="codex"] .entry-narrator {
+  animation: codex-enter 0.6s ease-in-out both;
+}
+@keyframes codex-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Wire narrative reveal ── */
+[data-theme="wire"] .entry-narrator {
+  animation: wire-reveal 0.4s steps(40, end) both;
+}
+@keyframes wire-reveal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ============================================================
+   CODEX — STRUCTURAL IDENTITY
+   Literary dark. Manuscript formatting, serif hierarchy,
+   ornamental rules, chapter-style headings.
+   ============================================================ */
+
+/* Panels: warm top accent + gradient bleed */
+[data-theme="codex"] .panel {
+  border-top: 2px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 5%, var(--bg-surface)) 0%,
+    var(--bg-surface) 60px
+  );
+}
+
+/* Panel title: serif, small-caps, ornamental gradient underline */
+[data-theme="codex"] .panel-title {
+  font-family: var(--font-narrative) !important;
+  font-size: 13px !important;
+  font-variant: small-caps;
+  letter-spacing: 2px !important;
+  color: var(--accent) !important;
+  text-transform: none !important;
+  padding-bottom: 9px !important;
+  margin-bottom: 12px !important;
+  border-bottom: none !important;
+  background: linear-gradient(90deg, var(--accent), transparent 75%) bottom / 100% 1px no-repeat;
+}
+[data-theme="codex"] .panel-title-row {
+  letter-spacing: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
+  margin-bottom: 8px !important;
+}
+[data-theme="codex"] .panel-title-row .panel-title {
+  margin-bottom: 0 !important;
+}
+/* Character name: italic serif heading */
+[data-theme="codex"] .char-name {
+  font-family: var(--font-narrative) !important;
+  font-size: 19px !important;
+  font-style: italic;
+  font-weight: 400 !important;
+  color: var(--text-primary) !important;
+}
+[data-theme="codex"] .char-sub {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  color: var(--accent) !important;
+}
+
+/* Ability grid → character-sheet table rows */
+[data-theme="codex"] .abilities {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+}
+[data-theme="codex"] .ability-box {
+  display: grid !important;
+  grid-template-columns: 36px 1fr 40px !important;
+  align-items: center;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  padding: 5px 2px !important;
+  text-align: left !important;
+}
+[data-theme="codex"] .ability-label {
+  font-family: var(--font-narrative) !important;
+  font-variant: small-caps;
+  font-size: 11px !important;
+  color: var(--accent) !important;
+  text-transform: none !important;
+}
+[data-theme="codex"] .ability-score {
+  font-family: var(--font-narrative) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  text-align: center;
+  color: var(--text-primary) !important;
+}
+[data-theme="codex"] .ability-mod {
+  font-family: var(--font-narrative) !important;
+  font-size: 12px !important;
+  text-align: right;
+  color: var(--accent) !important;
+}
+
+/* Narrator entries: book-page paragraph style */
+[data-theme="codex"] .entry-narrator {
+  border-left: none !important;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 3%, var(--bg-surface)) !important;
+  padding: 14px 18px !important;
+}
+[data-theme="codex"] .entry-narrator:first-child {
+  border-top: none;
+}
+
+/* Markdown content inside narrator: serif paragraphs, no indent */
+[data-theme="codex"] .markdown-content :global(p) {
+  margin: 0 0 0.65em !important;
+}
+[data-theme="codex"] .markdown-content :global(p:last-child) {
+  margin-bottom: 0 !important;
+}
+
+/* Player action: right-leaning italic in serif */
+[data-theme="codex"] .entry-player {
+  background: color-mix(in srgb, var(--success-dim) 40%, var(--bg-elevated)) !important;
+  padding: 10px 18px !important;
+  border-top: 1px solid color-mix(in srgb, var(--success) 15%, transparent) !important;
+}
+[data-theme="codex"] .player-glyph {
+  color: var(--accent) !important;
+  font-family: var(--font-narrative) !important;
+  font-size: 14px !important;
+  opacity: 1 !important;
+}
+[data-theme="codex"] .player-text {
+  font-family: var(--font-narrative) !important;
+  font-size: 14px !important;
+  font-style: italic !important;
+  letter-spacing: 0.2px;
+  color: var(--success) !important;
+}
+
+/* System event: ornamental separator */
+[data-theme="codex"] .system-text {
+  font-family: var(--font-narrative) !important;
+  font-style: italic !important;
+  color: var(--warning) !important;
+  font-size: 11px !important;
+}
+[data-theme="codex"] .system-rule {
+  background: color-mix(in srgb, var(--accent) 30%, transparent) !important;
+  opacity: 1 !important;
+}
+
+/* Logo: serif italic treatment */
+[data-theme="codex"] .logo-rpg {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+}
+[data-theme="codex"] .logo-auto {
+  font-family: var(--font-narrative) !important;
+  font-style: normal;
+  letter-spacing: 3px !important;
+}
+[data-theme="codex"] .icon-btn {
+  border-radius: 1px !important;
+}
+
+/* Main menu: manuscript styling */
+[data-theme="codex"] .main-menu-card {
+  border-top: 3px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 6%, var(--bg-surface)) 0%,
+    var(--bg-surface) 80px
+  ) !important;
+}
+[data-theme="codex"] .menu-kicker {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  text-transform: none !important;
+  letter-spacing: 1px !important;
+  color: var(--accent) !important;
+}
+[data-theme="codex"] .menu-title {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+}
+[data-theme="codex"] .menu-sub {
+  font-family: var(--font-narrative) !important;
+  font-size: 16px !important;
+  line-height: 1.85 !important;
+}
+[data-theme="codex"] .menu-btn {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  letter-spacing: 0.5px !important;
+}
+[data-theme="codex"] .feature-label {
+  font-family: var(--font-narrative) !important;
+  font-variant: small-caps;
+  font-size: 13px !important;
+  letter-spacing: 1px !important;
+  text-transform: none !important;
+}
+[data-theme="codex"] .feature-copy {
+  font-family: var(--font-narrative) !important;
+  line-height: 1.85 !important;
+}
+[data-theme="codex"] .menu-feature {
+  background: color-mix(in srgb, var(--accent) 4%, var(--bg-elevated)) !important;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)) !important;
+}
+
+/* Header: Codex scene title */
+[data-theme="codex"] .header {
+  min-height: 58px;
+  background: color-mix(in srgb, var(--bg-elevated) 96%, var(--accent) 4%);
+  border-bottom-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+}
+[data-theme="codex"] .header-scene {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  color: var(--text-primary) !important;
+}
+[data-theme="codex"] .header-meta,
+[data-theme="codex"] .meta-chip {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  color: var(--accent) !important;
+  font-size: 11px !important;
+}
+
+/* Quest panel */
+[data-theme="codex"] .quest-title {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+}
+
+/* Tabs */
+[data-theme="codex"] .tab {
+  font-family: var(--font-narrative) !important;
+  font-variant: small-caps;
+  font-size: 13px !important;
+  letter-spacing: 1px !important;
+}
+
+/* Panel toggle tabs */
+[data-theme="codex"] .ptab {
+  background: color-mix(in srgb, var(--bg-elevated) 96%, var(--accent) 4%) !important;
+}
+[data-theme="codex"] .ptab-arrow {
+  font-family: var(--font-narrative) !important;
+  font-size: 14px !important;
+  opacity: 0.6;
+}
+[data-theme="codex"] .ptab:hover .ptab-arrow { opacity: 1; }
+
+/* ============================================================
+   WIRE — STRUCTURAL IDENTITY
+   Terminal emulator. Monospace everything, titlebar panels,
+   command-line aesthetics, phosphor readouts.
+   ============================================================ */
+
+/* Panels: no radius, overflow hidden for titlebar trick */
+[data-theme="wire"] .panel {
+  overflow: hidden;
+  position: relative;
+}
+
+/* Panel title: rendered as a titlebar strip */
+[data-theme="wire"] .panel-title {
+  display: block;
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 3px !important;
+  text-transform: uppercase !important;
+  color: var(--accent) !important;
+  background: color-mix(in srgb, var(--bg-active) 90%, var(--accent) 10%);
+  margin: -12px -12px 10px;
+  padding: 5px 10px !important;
+  border-bottom: 1px solid var(--accent) !important;
+}
+/* Story panel title stays inline (it's inside panel-title-row) */
+[data-theme="wire"] .panel-title-row {
+  letter-spacing: 0 !important;
+  padding-bottom: 6px !important;
+  border-bottom: 1px solid var(--border) !important;
+  margin-bottom: 8px !important;
+}
+[data-theme="wire"] .panel-title-row .panel-title {
+  display: inline !important;
+  background: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-bottom: none !important;
+  font-size: 10px !important;
+  letter-spacing: 4px !important;
+}
+
+/* Character name: monospace ID */
+[data-theme="wire"] .char-name {
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  color: var(--accent) !important;
+}
+[data-theme="wire"] .char-sub {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+  color: var(--text-muted) !important;
+}
+
+/* Stat labels + values: telemetry readout */
+[data-theme="wire"] .stat-label {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 1px !important;
+  color: var(--text-secondary) !important;
+}
+[data-theme="wire"] .stat-val {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  color: var(--accent) !important;
+}
+
+/* Ability grid → vertical data table */
+[data-theme="wire"] .abilities {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+[data-theme="wire"] .ability-box {
+  display: grid !important;
+  grid-template-columns: 32px 1fr 36px !important;
+  align-items: center;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  padding: 3px 0 !important;
+  text-align: left !important;
+}
+[data-theme="wire"] .ability-label {
+  font-family: var(--font-mono) !important;
+  font-size: 8px !important;
+  letter-spacing: 1px !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase !important;
+}
+[data-theme="wire"] .ability-score {
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--accent) !important;
+  text-align: center;
+}
+[data-theme="wire"] .ability-mod {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  text-align: right;
+  color: var(--text-secondary) !important;
+}
+
+/* Gold row */
+[data-theme="wire"] .gold-row {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 1px !important;
+}
+
+/* Story log — Wire */
+[data-theme="wire"] .entry-narrator {
+  border-left: 2px solid var(--accent) !important;
+  border-top: none !important;
+  background: var(--bg-surface) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+}
+
+[data-theme="wire"] .entry-player {
+  background: color-mix(in srgb, var(--success-dim) 60%, transparent) !important;
+  border-top: 1px solid color-mix(in srgb, var(--success) 20%, transparent) !important;
+}
+[data-theme="wire"] .player-glyph {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  color: var(--accent) !important;
+  opacity: 1 !important;
+}
+[data-theme="wire"] .player-text {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  font-style: normal !important;
+  letter-spacing: 0.3px;
+  color: var(--success) !important;
+}
+[data-theme="wire"] .system-text {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  color: var(--warning) !important;
+}
+[data-theme="wire"] .system-rule {
+  background: var(--border) !important;
+  opacity: 0.8 !important;
+}
+
+
+[data-theme="wire"] .quest-title {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.5px !important;
+}
+[data-theme="wire"] .quest-header::before {
+  content: '> ';
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+[data-theme="wire"] .quest-desc,
+[data-theme="wire"] .note {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+}
+[data-theme="wire"] .objectives li {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+}
+
+/* Header: Wire terminal titlebar */
+[data-theme="wire"] .header {
+  min-height: 44px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--accent);
+}
+[data-theme="wire"] .header-scene {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  color: var(--accent) !important;
+}
+[data-theme="wire"] .header-meta,
+[data-theme="wire"] .meta-chip {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 1px !important;
+  color: var(--text-muted) !important;
+}
+
+/* Tabs */
+[data-theme="wire"] .tab {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+}
+[data-theme="wire"] .tab.active {
+  color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-hover)) !important;
+}
+
+/* Combat — Codex */
+[data-theme="codex"] .combat-label {
+  font-family: var(--font-narrative) !important;
+  font-variant: small-caps;
+  font-size: 12px !important;
+  letter-spacing: 2px !important;
+  text-transform: none !important;
+}
+[data-theme="codex"] .c-name {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  font-size: 13px !important;
+}
+[data-theme="codex"] .state-banner {
+  font-family: var(--font-narrative) !important;
+  font-variant: small-caps;
+  letter-spacing: 2px !important;
+  text-transform: none !important;
+}
+[data-theme="codex"] .atk-btn {
+  font-family: var(--font-narrative) !important;
+  font-variant: small-caps;
+  text-transform: none !important;
+  letter-spacing: 1px !important;
+  font-size: 11px !important;
+  border-radius: 1px !important;
+}
+[data-theme="codex"] .clog-line {
+  font-family: var(--font-narrative) !important;
+  font-size: 11px !important;
+  font-style: italic;
+}
+
+/* Combat — Wire */
+[data-theme="wire"] .combat-panel {
+  border-radius: 0 !important;
+}
+[data-theme="wire"] .combat-label {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 3px !important;
+}
+[data-theme="wire"] .c-name {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+}
+[data-theme="wire"] .c-hp {
+  font-family: var(--font-mono) !important;
+  color: var(--accent) !important;
+}
+[data-theme="wire"] .c-stats {
+  font-family: var(--font-mono) !important;
+}
+[data-theme="wire"] .clog-line {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+}
+[data-theme="wire"] .clog-line::before {
+  content: '$ ';
+  color: var(--text-muted);
+}
+[data-theme="wire"] .state-banner {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 3px !important;
+}
+[data-theme="wire"] .atk-btn {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  border-radius: 0 !important;
+  letter-spacing: 1px !important;
+}
+[data-theme="wire"] .turn-pip {
+  font-family: var(--font-mono) !important;
+  border-radius: 0 !important;
+}
+
+/* Logo */
+[data-theme="wire"] .logo-rpg {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 4px !important;
+  text-transform: uppercase !important;
+  font-weight: 900 !important;
+}
+[data-theme="wire"] .logo-auto {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 4px !important;
+  text-transform: uppercase !important;
+}
+
+/* Icon buttons */
+[data-theme="wire"] .icon-btn {
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  border-radius: 0 !important;
+}
+
+/* Main menu: terminal session */
+[data-theme="wire"] .main-menu-card {
+  background: var(--bg-surface) !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  border: 1px solid var(--border) !important;
+  border-top: 2px solid var(--accent) !important;
+}
+[data-theme="wire"] .main-menu-backdrop {
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%),
+              var(--bg-base) !important;
+}
+[data-theme="wire"] .menu-kicker {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 4px !important;
+  text-transform: uppercase !important;
+  color: var(--text-muted) !important;
+}
+[data-theme="wire"] .menu-kicker::before { content: '// '; }
+[data-theme="wire"] .menu-title {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 10px !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+}
+[data-theme="wire"] .menu-sub {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  line-height: 1.9 !important;
+  color: var(--text-secondary) !important;
+}
+[data-theme="wire"] .menu-sub::before { content: '> '; color: var(--text-muted); }
+[data-theme="wire"] .menu-btn {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  border-radius: 0 !important;
+  font-size: 12px !important;
+}
+[data-theme="wire"] .feature-label {
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important;
+  letter-spacing: 3px !important;
+  text-transform: uppercase !important;
+}
+[data-theme="wire"] .feature-copy {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  line-height: 1.7 !important;
+}
+[data-theme="wire"] .menu-feature {
+  border-radius: 0 !important;
+  background: var(--bg-elevated) !important;
+  border-color: var(--border) !important;
+}
+
+/* Blinking cursor glyph at end of loading indicator */
+[data-theme="wire"] .entry-narrator.loading::after {
+  content: '_';
+  animation: wire-cursor 1s steps(1) infinite;
+  color: var(--accent);
+}
+@keyframes wire-cursor {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* ── Codex: input area ─────────────────────────────────────────────────── */
+[data-theme="codex"] .choice-text {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  font-size: 14px !important;
+  letter-spacing: 0.2px;
+}
+[data-theme="codex"] .choice-glyph {
+  font-family: var(--font-narrative) !important;
+  font-size: 13px !important;
+}
+[data-theme="codex"] .choice-btn {
+  border-radius: 1px !important;
+}
+[data-theme="codex"] .input-bar {
+  border-radius: 2px !important;
+  background: color-mix(in srgb, var(--accent) 3%, var(--bg-elevated)) !important;
+}
+[data-theme="codex"] .text-input {
+  font-family: var(--font-narrative) !important;
+  font-size: 15px !important;
+}
+[data-theme="codex"] .text-input::placeholder {
+  font-family: var(--font-narrative) !important;
+  font-size: 14px !important;
+}
+
+/* ── Wire: input area ──────────────────────────────────────────────────── */
+[data-theme="wire"] .choices {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+  gap: 3px !important;
+}
+[data-theme="wire"] .choice-btn {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.5px !important;
+  border-radius: 0 !important;
+}
+[data-theme="wire"] .choice-text {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+}
+[data-theme="wire"] .choice-glyph {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+}
+[data-theme="wire"] .input-bar {
+  border-radius: 0 !important;
+  border-color: var(--border) !important;
+}
+[data-theme="wire"] .input-bar:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 20%, transparent) !important;
+}
+[data-theme="wire"] .text-input {
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+  letter-spacing: 0.3px;
+}
+[data-theme="wire"] .text-input::placeholder {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 1px;
+  font-style: normal !important;
+}
+[data-theme="wire"] .send-btn {
+  border-radius: 0 !important;
+  font-family: var(--font-mono) !important;
+}
+
+/* ── CombatInterface — Codex ───────────────────────────────────────────── */
+[data-theme="codex"] .ci-label,
+[data-theme="codex"] .ci-round,
+[data-theme="codex"] .ci-state {
+  font-family: var(--font-narrative) !important;
+  font-variant: small-caps;
+  text-transform: none !important;
+  letter-spacing: 1.5px !important;
+}
+[data-theme="codex"] .ci-card-name {
+  font-family: var(--font-narrative) !important;
+  font-style: italic;
+  font-size: 14px !important;
+}
+[data-theme="codex"] .ci-btn {
+  font-family: var(--font-narrative) !important;
+  font-variant: small-caps;
+  text-transform: none !important;
+  letter-spacing: 1px !important;
+  border-radius: 1px !important;
+}
+[data-theme="codex"] .combat-interface {
+  border-radius: 2px !important;
+}
+
+/* ── CombatInterface — Wire ────────────────────────────────────────────── */
+[data-theme="wire"] .combat-interface {
+  border-radius: 0 !important;
+}
+[data-theme="wire"] .ci-label,
+[data-theme="wire"] .ci-round,
+[data-theme="wire"] .ci-state,
+[data-theme="wire"] .ci-stats,
+[data-theme="wire"] .ci-hp {
+  font-family: var(--font-mono) !important;
+}
+[data-theme="wire"] .ci-label { letter-spacing: 4px !important; }
+[data-theme="wire"] .ci-card-name {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+}
+[data-theme="wire"] .ci-card { border-radius: 0 !important; }
+[data-theme="wire"] .ci-btn {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 1px !important;
+  border-radius: 0 !important;
+}
+[data-theme="wire"] .ci-btn-attack {
+  box-shadow: inset 0 0 0 1px var(--danger) !important;
+}
+[data-theme="wire"] .ci-state {
+  border-radius: 0 !important;
+}
+
+[data-theme="wire"] .ptab {
+  background: var(--bg-elevated) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="wire"] .ptab:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated)) !important;
+  color: var(--accent) !important;
+}
+[data-theme="wire"] .ptab-arrow {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 2px;
+}
+

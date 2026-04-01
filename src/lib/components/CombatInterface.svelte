@@ -4,6 +4,10 @@
 
   async function attack(targetId: string) {
     await playerAttack(targetId);
+    const state = $combat?.state;
+    if (state === 'Victory' || state === 'Defeat') {
+      await sendToAI(state === 'Victory' ? '[Combat ended: Victory]' : '[Combat ended: Defeat]');
+    }
   }
 
   async function flee() {

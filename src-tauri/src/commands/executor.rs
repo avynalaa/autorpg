@@ -347,23 +347,19 @@ pub fn apply_command(state: &mut GameState, cmd: &ParsedCommand) -> Option<Strin
             let style_str = args.get(1).cloned().unwrap_or_default();
             let raw_text = args[2..].join(" ");
 
-            // Guard: AI sometimes repeats the id at the start of the text field.
-            // Strip it if the text begins with the id (case-insensitive, with or without underscores).
-            let id_variants = [
-                id.clone(),
-                id.replace('_', " "),
-                id.replace('_', ""),
-            ];
+            // Guard: AI sometimes writes the id itself as the text (e.g. "grab_him" as both id and text).
+            // Only strip when the entire text IS the id — never strip partial prefixes, as that
+            // truncates real choice text (e.g. "grab him" stripped from "Grab him by the collar").
             let text = {
-                let mut t = raw_text.clone();
-                for variant in &id_variants {
-                    let prefix = variant.to_lowercase();
-                    if t.to_lowercase().starts_with(&prefix) {
-                        t = t[variant.len()..].trim().to_string();
-                        break;
-                    }
+                let raw = raw_text.trim().to_string();
+                let raw_lower = raw.to_lowercase();
+                let id_bare  = id.to_lowercase();
+                let id_words = id.replace('_', " ").to_lowercase();
+                if raw_lower == id_bare || raw_lower == id_words {
+                    id.replace('_', " ") // readable fallback
+                } else {
+                    raw
                 }
-                t
             };
             let style = match style_str.to_lowercase().as_str() {
                 "danger"  => ChoiceStyle::Danger,

@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
-import type { GameState, AiResponse, DiceRoll, Quest, SaveMetadata, Settings } from '../types';
+import type { GameState, AiResponse, DiceRoll, Quest, SaveMetadata, Settings, AbilityScores } from '../types';
 
 // ── Core state store ──────────────────────────────────────────────────────
 export const gameState = writable<GameState | null>(null);
@@ -68,9 +68,16 @@ export async function rollDice(notation: string, label?: string): Promise<DiceRo
 
 export async function createCharacter(data: {
   name: string;
+  last_name: string | null;
+  age: number | null;
+  gender: string;
+  sex: string;
+  appearance: string;
+  personality: string;
   race: string;
   class: string;
   backstory: string;
+  ability_scores: AbilityScores | null;
 }) {
   const gs = await invoke<GameState>('create_character', { data });
   gameState.set(gs);

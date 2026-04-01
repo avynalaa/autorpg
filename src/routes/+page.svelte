@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gameState, loadGameState, createCharacter, resetGame, lastError, isLoading, goToMenu, listSaves, loadGame } from '$lib/stores/gameStore';
+  import { gameState, loadGameState, resetGame, lastError, isLoading, goToMenu, listSaves, loadGame } from '$lib/stores/gameStore';
   import type { SaveMetadata } from '$lib/types';
   import CharacterPanel from '$lib/components/CharacterPanel.svelte';
   import InventoryPanel from '$lib/components/InventoryPanel.svelte';
@@ -10,18 +10,13 @@
   import CombatInterface from '$lib/components/CombatInterface.svelte';
   import SettingsModal from '$lib/components/SettingsModal.svelte';
   import SaveLoadModal from '$lib/components/SaveLoadModal.svelte';
+  import CharacterCreationModal from '$lib/components/CharacterCreationModal.svelte';
 
   let showSettings = $state(false);
   let showSaveLoad = $state(false);
   let activeRightTab = $state<'quests' | 'inventory'>('quests');
   let leftOpen  = $state(true);
   let rightOpen = $state(true);
-
-
-  let charForm = $state({ name: '', race: 'Human', charClass: 'Warrior', backstory: '' });
-  let charError = $state<string | null>(null);
-  const races = ['Human','Elf','Dwarf','Halfling','Orc'];
-  const classes = ['Warrior','Mage','Rogue','Cleric','Ranger','Bard'];
 
   let menuSaves = $state<Array<SaveMetadata | null>>([]);
   const mostRecentSave = $derived(
@@ -44,21 +39,6 @@
   async function handleContinue() {
     if (!mostRecentSave) return;
     await loadGame(mostRecentSave.slot);
-  }
-
-  async function handleCreateChar() {
-    if (!charForm.name.trim()) return;
-    charError = null;
-    try {
-      await createCharacter({
-        name: charForm.name,
-        race: charForm.race,
-        class: charForm.charClass,
-        backstory: charForm.backstory,
-      });
-    } catch (e) {
-      charError = String(e);
-    }
   }
 
   async function handleNewGame() {
@@ -251,44 +231,7 @@
 {/if}
 
 {#if $gameState?.phase === 'CharacterCreation'}
-  <div class="backdrop" role="presentation"></div>
-  <div class="modal char-create-modal">
-    <div class="modal-header">
-      <span class="modal-title">Create Character</span>
-    </div>
-    <div class="modal-body">
-      <div class="field-label">Name</div>
-      <input class="text-field" bind:value={charForm.name} placeholder="Your hero's name" />
-
-      <div class="field-label" style="margin-top:12px">Race</div>
-      <div class="option-grid">
-        {#each races as r}
-          <button class="option-btn" class:selected={charForm.race === r}
-            onclick={() => charForm.race = r}>{r}</button>
-        {/each}
-      </div>
-
-      <div class="field-label" style="margin-top:12px">Class</div>
-      <div class="option-grid">
-        {#each classes as c}
-          <button class="option-btn" class:selected={charForm.charClass === c}
-            onclick={() => charForm.charClass = c}>{c}</button>
-        {/each}
-      </div>
-
-      <div class="field-label" style="margin-top:12px">Backstory (optional)</div>
-      <textarea class="text-area" rows="3" bind:value={charForm.backstory}
-        placeholder="A few words about your character's past..."></textarea>
-    </div>
-    {#if charError}
-      <div class="char-error">{charError}</div>
-    {/if}
-    <div class="modal-footer">
-      <button class="btn-save" onclick={handleCreateChar}
-        disabled={!charForm.name.trim()}>Begin Adventure</button>
-      <button class="btn-cancel" onclick={handleNewGame}>Cancel</button>
-    </div>
-  </div>
+  <CharacterCreationModal />
 {/if}
 
 <style>

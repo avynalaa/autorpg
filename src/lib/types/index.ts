@@ -17,6 +17,12 @@ export interface AbilityScores {
 export interface Character {
   id: string;
   name: string;
+  last_name: string | null;
+  age: number | null;
+  gender: string;
+  sex: string;
+  appearance: string;
+  personality: string;
   race: string;
   class: string;
   level: number;

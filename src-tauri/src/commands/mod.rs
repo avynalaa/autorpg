@@ -662,17 +662,36 @@ pub fn player_attack(target_id: String, state: State<AppState>) -> Result<GameSt
 #[derive(Deserialize)]
 pub struct NewCharacter {
     pub name: String,
+    pub last_name: Option<String>,
+    pub age: Option<u32>,
+    pub gender: String,
+    pub sex: String,
+    pub appearance: String,
+    pub personality: String,
     pub race: String,
     pub class: String,
     pub backstory: String,
+    pub ability_scores: Option<crate::engine::character::AbilityScores>,
 }
 
 #[tauri::command]
 pub fn create_character(data: NewCharacter, state: State<AppState>) -> GameState {
     use crate::engine::character::{CharacterRace, CharacterClass};
     let mut gs = state.game.lock().unwrap();
+    
+    // Identity
     gs.player.name = data.name;
+    gs.player.last_name = data.last_name;
+    gs.player.age = data.age;
+    gs.player.gender = data.gender;
+    gs.player.sex = data.sex;
+    
+    // Persona
+    gs.player.appearance = data.appearance;
+    gs.player.personality = data.personality;
     gs.player.backstory = data.backstory;
+    
+    // Race
     gs.player.race = match data.race.to_lowercase().as_str() {
         "elf"      => CharacterRace::Elf,
         "dwarf"    => CharacterRace::Dwarf,
@@ -680,6 +699,8 @@ pub fn create_character(data: NewCharacter, state: State<AppState>) -> GameState
         "orc"      => CharacterRace::Orc,
         _          => CharacterRace::Human,
     };
+    
+    // Class
     gs.player.class = match data.class.to_lowercase().as_str() {
         "mage"    => CharacterClass::Mage,
         "rogue"   => CharacterClass::Rogue,
@@ -688,6 +709,17 @@ pub fn create_character(data: NewCharacter, state: State<AppState>) -> GameState
         "bard"    => CharacterClass::Bard,
         _         => CharacterClass::Warrior,
     };
+    
+    // Ability scores — use provided or class preset
+    gs.player.ability_scores = data.ability_scores.unwrap_or_else(|| gs.player.class.preset_scores());
+    
+    // Calculate HP/MP based on class and CON/INT/WIS/CHA
+    let con_mod = gs.player.ability_scores.con_mod();
+    gs.player.hp_max = gs.player.class.base_hp() + con_mod;
+    gs.player.hp = gs.player.hp_max;
+    gs.player.mp_max = gs.player.class.base_mp(&gs.player.ability_scores);
+    gs.player.mp = gs.player.mp_max;
+    
     gs.phase = crate::engine::game_state::GamePhase::Playing;
     gs.clone()
 }
